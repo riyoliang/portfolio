@@ -21,12 +21,15 @@ body { font-family:var(--af-font); background:#f0f4f9; color:var(--af-text); }
   background:var(--af-primary); color:var(--af-white);
   padding:16px 32px; display:flex; align-items:center;
   justify-content:space-between; box-shadow:0 2px 12px rgba(74,111,165,.3);
+  width:100%; box-sizing:border-box; overflow:hidden;
 }
+.header > div:first-child { flex:1; min-width:0; }
 .header h1 { font-size:1.2rem; font-weight:700; letter-spacing:.04em; }
 .header .sub { font-size:.78rem; opacity:.8; margin-top:2px; }
 .badge {
   background:rgba(255,255,255,.18); border-radius:var(--af-radius);
   padding:5px 14px; font-size:.82rem; font-weight:700;
+  flex-shrink:0; white-space:nowrap; margin-left:12px;
 }
 .container { max-width:1280px; margin:0 auto; padding:20px 20px 48px; }
 .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
