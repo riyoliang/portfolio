@@ -85,17 +85,21 @@ td.r { text-align:right; font-variant-numeric:tabular-nums; }
 .leg { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
 .leg-i { display:flex; align-items:center; gap:4px; font-size:.72rem; }
 .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+html,body{ max-width:100%; overflow-x:hidden; }
+.detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 @media(max-width:900px){ .charts-row{ grid-template-columns:1fr; } }
 @media(max-width:640px){
-  .header{ padding:12px 16px; flex-wrap:wrap; gap:8px; }
-  .header h1{ font-size:1.05rem; }
-  .badge{ font-size:.75rem; padding:4px 10px; }
+  .header{ padding:10px 14px; gap:6px; }
+  .header > div:first-child{ flex:1; min-width:0; }
+  .header h1{ font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badge{ font-size:.72rem; padding:3px 8px; white-space:nowrap; flex-shrink:0; }
   .kpi-row{ grid-template-columns:1fr 1fr; }
   .kpi.tot{ grid-column:1 / -1; }
-  .kpi-val{ font-size:1.3rem; }
-  .container{ padding:12px 12px 40px; }
-  table{ font-size:.74rem; }
-  th,td{ padding:6px 7px; }
+  .kpi-val{ font-size:1.25rem; }
+  .container{ padding:10px 10px 40px; }
+  table{ font-size:.72rem; }
+  th,td{ padding:5px 6px; }
+  .detail-grid{ grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -198,7 +202,7 @@ DATA.forEach((snap, idx) => {
   const pnl = document.createElement('div');
   pnl.className = 'panel'; pnl.id = 'p' + idx;
   let h = `<div class="rate"><div>日期：<span>${snap.date}</span></div><div>USD/CNY：<span>${snap.usd_cny}</span></div><div>HKD/CNY：<span>${snap.hkd_cny}</span></div><div>较上期：${chgHtml}</div></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="detail-grid">
   <div><div class="sec">风险资产</div>
   <table><thead><tr><th>企业</th><th class="r">持股数</th><th>股价</th><th class="r">人民币市值</th><th class="r">持仓比例</th><th class="r">老唐比例</th></tr></thead><tbody>`;
   snap.stocks.forEach(s => {
