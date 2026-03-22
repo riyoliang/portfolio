@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard · 投资记录 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --af-primary: #4a6fa5; --af-bg: #fafafa; --af-accent: #d4e4f7;
+  --af-sub: #c0c0c0; --af-text: #1a1a2e; --af-white: #ffffff;
+  --af-emphasis: #eef3fa;
+  --af-shadow: 0 2px 8px rgba(74,111,165,0.12); --af-radius: 6px;
+  --af-font: 'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--af-font); background:#f0f4f9; color:var(--af-text); }
+.header {
+  background:var(--af-primary); color:var(--af-white);
+  padding:16px 32px; display:flex; align-items:center;
+  justify-content:space-between; box-shadow:0 2px 12px rgba(74,111,165,.3);
+}
+.header h1 { font-size:1.2rem; font-weight:700; letter-spacing:.04em; }
+.header .sub { font-size:.78rem; opacity:.8; margin-top:2px; }
+.badge {
+  background:rgba(255,255,255,.18); border-radius:var(--af-radius);
+  padding:5px 14px; font-size:.82rem; font-weight:700;
+}
+.container { max-width:1280px; margin:0 auto; padding:20px 20px 48px; }
+.kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.kpi { background:var(--af-white); border-radius:var(--af-radius); box-shadow:var(--af-shadow);
+         padding:18px 22px; border-top:3px solid var(--af-primary); }
+.kpi.rf  { border-top-color:#6a9fd8; }
+.kpi.tot { border-top-color:#2d6a2d; }
+.kpi-lbl { font-size:.74rem; color:#666; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+.kpi-val-row { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.kpi-val { font-size:1.55rem; font-weight:700; color:var(--af-primary); }
+.kpi.rf  .kpi-val { color:#6a9fd8; }
+.kpi.tot .kpi-val { color:#2d6a2d; }
+.kpi-jpy { font-size:.74rem; color:#aaa; }
+.kpi-sub { font-size:.74rem; color:#888; margin-top:3px; }
+.kpi-chg { font-size:.76rem; font-weight:700; margin-top:2px; }
+.up { color:#c0392b; } .dn { color:#2d9d2d; }
+.charts-row { display:grid; grid-template-columns:1fr 320px; gap:14px; margin-bottom:16px; }
+.card { background:var(--af-white); border-radius:var(--af-radius); box-shadow:var(--af-shadow); padding:18px 22px; }
+.card-title { font-size:.84rem; font-weight:700; color:var(--af-primary);
+               border-bottom:2px solid var(--af-accent); padding-bottom:8px; margin-bottom:14px; }
+.cw { position:relative; height:230px; }
+.cw-pie { position:relative; height:210px; }
+table { border-collapse:collapse; width:100%; font-size:.82rem; }
+thead tr { background:var(--af-primary); color:var(--af-white); font-weight:700; }
+tbody tr:nth-child(odd)  { background:var(--af-bg); }
+tbody tr:nth-child(even) { background:var(--af-accent); }
+tbody tr.tot { background:var(--af-emphasis); font-weight:700; }
+tbody tr:hover { background:#c5d8ef; transition:background .12s; }
+th,td { padding:8px 11px; border:1px solid var(--af-sub); text-align:left; }
+td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.lt { display:inline-block; background:var(--af-accent); color:var(--af-primary);
+       border-radius:3px; padding:1px 5px; font-size:.72rem; font-weight:700; }
+.panel { display:none; } .panel.on { display:block; }
+.hist-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+             background:var(--af-emphasis); border-radius:var(--af-radius);
+             padding:9px 13px; margin-bottom:12px; }
+.hist-bar label { font-size:.76rem; font-weight:700; color:var(--af-primary); white-space:nowrap; }
+.snap-sel { flex:1; min-width:180px; max-width:320px; padding:5px 8px;
+             border:2px solid var(--af-primary); border-radius:var(--af-radius);
+             font-family:var(--af-font); font-size:.82rem; color:var(--af-text);
+             background:var(--af-white); cursor:pointer; }
+.snap-sel:focus { outline:2px solid var(--af-primary); }
+.nav-btn { background:var(--af-primary); color:#fff; border:none; border-radius:var(--af-radius);
+            padding:5px 14px; font-size:.8rem; font-weight:700; cursor:pointer;
+            font-family:var(--af-font); transition:opacity .15s; }
+.nav-btn:hover { opacity:.82; } .nav-btn:disabled { opacity:.35; cursor:default; }
+.hist-count { font-size:.72rem; color:#888; margin-left:auto; white-space:nowrap; }
+.latest-badge { display:none; background:#f5c518; color:#1a1a2e; border-radius:var(--af-radius);
+                 padding:3px 10px; font-size:.76rem; font-weight:700; white-space:nowrap; }
+.latest-badge.on { display:inline-block; }
+.rate { background:var(--af-accent); border-radius:var(--af-radius); padding:7px 14px;
+         font-size:.76rem; color:#555; margin-bottom:10px; display:flex; gap:20px; flex-wrap:wrap; }
+.rate span { font-weight:700; color:var(--af-primary); }
+.sec { font-size:.84rem; font-weight:700; color:var(--af-primary);
+        border-left:3px solid var(--af-primary); padding-left:9px; margin:16px 0 10px; }
+.leg { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.leg-i { display:flex; align-items:center; gap:4px; font-size:.72rem; }
+.dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+@media(max-width:900px){ .charts-row{ grid-template-columns:1fr; } }
+@media(max-width:560px){ .kpi-row{ grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div><h1>Portfolio Dashboard</h1><div class="sub">投资记录 2026 · 数据来源：投资记录.xlsx</div></div>
+  <div class="badge" id="dateBadge">—</div>
+</div>
+<div class="container">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">风险资产</div><div class="kpi-val-row"><div class="kpi-val" id="kR">—</div><div class="kpi-jpy" id="kRj">—</div></div><div class="kpi-sub" id="kRp">—</div><div class="kpi-chg" id="kRc">—</div></div>
+    <div class="kpi rf"><div class="kpi-lbl">无风险资产</div><div class="kpi-val-row"><div class="kpi-val" id="kF">—</div><div class="kpi-jpy" id="kFj">—</div></div><div class="kpi-sub" id="kFp">—</div><div class="kpi-chg" id="kFc">—</div></div>
+    <div class="kpi tot"><div class="kpi-lbl">总资产</div><div class="kpi-val-row"><div class="kpi-val" id="kT">—</div><div class="kpi-jpy" id="kTj">—</div></div><div class="kpi-chg" id="kC">—</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="card"><div class="card-title">📈 总资产走势（人民币）</div><div class="cw"><canvas id="trendC"></canvas></div></div>
+    <div class="card"><div class="card-title">🥧 最新持仓分布</div><div class="cw-pie"><canvas id="pieC"></canvas></div><div class="leg" id="leg"></div></div>
+  </div>
+  <div class="card"><div class="card-title">📋 持仓明细</div>
+    <div class="hist-bar">
+      <label>跳转至：</label>
+      <select class="snap-sel" id="snapSel"></select>
+      <span class="latest-badge" id="latestBadge">最新</span>
+      <button class="nav-btn" id="prevBtn">◀</button>
+      <button class="nav-btn" id="nextBtn">▶</button>
+      <span class="hist-count" id="histCount"></span>
+    </div>
+    <div id="panels"></div>
+  </div>
+</div>
+<script>
+const DATA = [{"date": "2026-03-05", "usd_cny": 6.9007, "hkd_cny": 0.8826, "total_risky": 8573596, "total_rf": 1601362, "total": 10174958, "stocks": [{"name": "腾讯控股", "price": "508.50 HKD", "cny": 4308500, "ratio": 0.5025312599287394, "laotang": 0.5741, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,399.02 CNY", "cny": 2098530, "ratio": 0.2447666066840565, "laotang": 0.2456, "shares": 1500.0}, {"name": "分众传媒", "price": "6.69 CNY", "cny": 1200855, "ratio": 0.1400643323991473, "laotang": 0.1287, "shares": 179500.0}, {"name": "古井贡B", "price": "83.60 HKD", "cny": 442712, "ratio": 0.05163667613916028, "laotang": 0.0493, "shares": 6000.0}, {"name": "盈富基金", "price": "25.64 HKD", "cny": 237614, "ratio": 0.0277146252284339, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "35.56 HKD", "cny": 175757, "ratio": 0.02049979961733676, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "101.19 USD", "cny": 97759, "ratio": 0.01140233339662844, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "69.15 USD", "cny": 11869, "ratio": 0.001384366606497437, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.40 USD", "cny": 1310139, "ratio": 0.8181404329564458, "shares": 1891.0}, {"name": "SHY", "price": "82.75 USD", "cny": 291223, "ratio": 0.1818595670435542, "shares": 510.0}]}, {"date": "2026-03-06", "usd_cny": 6.89, "hkd_cny": 0.881, "total_risky": 8620281, "total_rf": 1598101, "total": 10218382, "stocks": [{"name": "腾讯控股", "price": "515.00 HKD", "cny": 4355664, "ratio": 0.5052809763394024, "laotang": 0.5741, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,407.00 CNY", "cny": 2110500, "ratio": 0.2448296059026382, "laotang": 0.2456, "shares": 1500.0}, {"name": "分众传媒", "price": "6.66 CNY", "cny": 1195470, "ratio": 0.1386810940385818, "laotang": 0.1287, "shares": 179500.0}, {"name": "古井贡B", "price": "83.10 HKD", "cny": 439267, "ratio": 0.05095738758400103, "laotang": 0.0493, "shares": 6000.0}, {"name": "盈富基金", "price": "25.52 HKD", "cny": 236073, "ratio": 0.0273857661948607, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "35.28 HKD", "cny": 174057, "ratio": 0.02019156916114451, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "101.00 USD", "cny": 97425, "ratio": 0.011301835752222, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "69.00 USD", "cny": 11825, "ratio": 0.001371765027149347, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.38 USD", "cny": 1307853, "ratio": 0.818379439096778, "shares": 1891.0}, {"name": "SHY", "price": "82.60 USD", "cny": 290248, "ratio": 0.181620560903222, "shares": 510.0}]}, {"date": "2026-03-07", "usd_cny": 6.895, "hkd_cny": 0.8815, "total_risky": 8680123, "total_rf": 1600129, "total": 10280252, "stocks": [{"name": "腾讯控股", "price": "519.00 HKD", "cny": 4391986, "ratio": 0.505982000485477, "laotang": 0.5741, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,413.00 CNY", "cny": 2119500, "ratio": 0.2441785675156907, "laotang": 0.2456, "shares": 1500.0}, {"name": "分众传媒", "price": "6.69 CNY", "cny": 1200855, "ratio": 0.1383453898061122, "laotang": 0.1287, "shares": 179500.0}, {"name": "古井贡B", "price": "84.00 HKD", "cny": 444276, "ratio": 0.05118314567662233, "laotang": 0.0516, "shares": 6000.0}, {"name": "盈富基金", "price": "25.70 HKD", "cny": 237873, "ratio": 0.0274043351689832, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "35.60 HKD", "cny": 175736, "ratio": 0.0202457960561158, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "101.50 USD", "cny": 97978, "ratio": 0.01128762806702163, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "69.50 USD", "cny": 11919, "ratio": 0.001373137223977126, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.42 USD", "cny": 1309319, "ratio": 0.8182584029162648, "shares": 1891.0}, {"name": "SHY", "price": "82.70 USD", "cny": 290810, "ratio": 0.1817415970837351, "shares": 510.0}]}, {"date": "2026-03-10", "usd_cny": 6.8965, "hkd_cny": 0.8799, "total_risky": 8939556, "total_rf": 1601250, "total": 10540806, "stocks": [{"name": "腾讯控股", "price": "553.50 HKD", "cny": 4675437, "ratio": 0.5230055049713879, "laotang": 0.5741, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,401.88 CNY", "cny": 2102820, "ratio": 0.235226447487996, "laotang": 0.2456, "shares": 1500.0}, {"name": "分众传媒", "price": "6.78 CNY", "cny": 1217010, "ratio": 0.1361376336811359, "laotang": 0.1287, "shares": 179500.0}, {"name": "古井贡B", "price": "79.20 HKD", "cny": 418128, "ratio": 0.04677279274272682, "laotang": 0.0516, "shares": 6000.0}, {"name": "盈富基金", "price": "26.18 HKD", "cny": 241876, "ratio": 0.02705682474610596, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "35.78 HKD", "cny": 176304, "ratio": 0.01972178484032093, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "99.58 USD", "cny": 96145, "ratio": 0.01075500841428814, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "69.00 USD", "cny": 11836, "ratio": 0.001324003116038425, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.46 USD", "cny": 1310128, "ratio": 0.8181907884465262, "shares": 1891.0}, {"name": "SHY", "price": "82.77 USD", "cny": 291122, "ratio": 0.1818092115534738, "shares": 510.0}]}, {"date": "2026-03-11", "usd_cny": 6.8724, "hkd_cny": 0.8777, "total_risky": 9155972, "total_rf": 1630175, "total": 10786147, "stocks": [{"name": "腾讯控股", "price": "552.00 HKD", "cny": 4651108, "ratio": 0.5079862629549325, "laotang": 0.5741, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,400.00 CNY", "cny": 2380000, "ratio": 0.2599396328429139, "laotang": 0.2456, "shares": 1700.0}, {"name": "分众传媒", "price": "6.80 CNY", "cny": 1220600, "ratio": 0.1333118974151516, "laotang": 0.1287, "shares": 179500.0}, {"name": "古井贡B", "price": "72.04 HKD", "cny": 379377, "ratio": 0.04143492356682611, "laotang": 0.0516, "shares": 6000.0}, {"name": "盈富基金", "price": "26.10 HKD", "cny": 240534, "ratio": 0.0262707225404359, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "35.96 HKD", "cny": 176748, "ratio": 0.01930412194357956, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "99.58 USD", "cny": 95810, "ratio": 0.01046420849692419, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "69.00 USD", "cny": 11795, "ratio": 0.001288230239236206, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.46 USD", "cny": 1340070, "ratio": 0.8220405784655022, "shares": 1941.0}, {"name": "SHY", "price": "82.77 USD", "cny": 290105, "ratio": 0.1779594215344978, "shares": 510.0}]}, {"date": "2026-03-14", "usd_cny": 6.9095, "hkd_cny": 0.8823, "total_risky": 9260077, "total_rf": 1638996, "total": 10899073, "stocks": [{"name": "腾讯控股", "price": "548.50 HKD", "cny": 4645839, "ratio": 0.5017063033061172, "laotang": 0.5833, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,413.64 CNY", "cny": 2403188, "ratio": 0.259521384109441, "laotang": 0.2388, "shares": 1700.0}, {"name": "分众传媒", "price": "6.87 CNY", "cny": 1233165, "ratio": 0.1331700589530735, "laotang": 0.127, "shares": 179500.0}, {"name": "古井贡B", "price": "73.26 HKD", "cny": 387824, "ratio": 0.04188129321170871, "laotang": 0.051, "shares": 6000.0}, {"name": "盈富基金", "price": "25.72 HKD", "cny": 238274, "ratio": 0.02573131951278591, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "48.80 HKD", "cny": 241115, "ratio": 0.02603812041735722, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "102.65 USD", "cny": 99296, "ratio": 0.01072302098567863, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "66.19 USD", "cny": 11376, "ratio": 0.001228499503837819, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.52 USD", "cny": 1348106, "ratio": 0.8225193960204906, "shares": 1941.0}, {"name": "SHY", "price": "82.55 USD", "cny": 290890, "ratio": 0.1774806039795094, "shares": 510.0}]}, {"date": "2026-03-17", "usd_cny": 6.8866, "hkd_cny": 0.8787, "total_risky": 9482687, "total_rf": 1633922, "total": 11116609, "stocks": [{"name": "腾讯控股", "price": "558.00 HKD", "cny": 4707020, "ratio": 0.4963804035712662, "laotang": 0.5833, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,492.56 CNY", "cny": 2537352, "ratio": 0.267577322756725, "laotang": 0.2388, "shares": 1700.0}, {"name": "分众传媒", "price": "6.98 CNY", "cny": 1252910, "ratio": 0.1321260524574944, "laotang": 0.127, "shares": 179500.0}, {"name": "古井贡B", "price": "74.04 HKD", "cny": 390354, "ratio": 0.04116491454373639, "laotang": 0.051, "shares": 6000.0}, {"name": "盈富基金", "price": "26.36 HKD", "cny": 243207, "ratio": 0.02564747734476526, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "48.78 HKD", "cny": 240033, "ratio": 0.02531276208947949, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "103.84 USD", "cny": 100115, "ratio": 0.0105576615573202, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "68.28 USD", "cny": 11696, "ratio": 0.001233405679213075, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.52 USD", "cny": 1343638, "ratio": 0.8223391324677677, "shares": 1941.0}, {"name": "SHY", "price": "82.65 USD", "cny": 290284, "ratio": 0.1776608675322323, "shares": 510.0}]}, {"date": "2026-03-18", "usd_cny": 6.8804, "hkd_cny": 0.8779, "total_risky": 9266397, "total_rf": 1632753, "total": 10899150, "stocks": [{"name": "腾讯控股", "price": "542.50 HKD", "cny": 4572103, "ratio": 0.4934067685638766, "laotang": 0.5833, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,474.98 CNY", "cny": 2507466, "ratio": 0.270597730703746, "laotang": 0.2388, "shares": 1700.0}, {"name": "分众传媒", "price": "6.75 CNY", "cny": 1211625, "ratio": 0.1307547043365399, "laotang": 0.127, "shares": 179500.0}, {"name": "古井贡B", "price": "73.57 HKD", "cny": 387523, "ratio": 0.04182024577621701, "laotang": 0.051, "shares": 6000.0}, {"name": "盈富基金", "price": "26.08 HKD", "cny": 240404, "ratio": 0.02594363267621709, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "47.80 HKD", "cny": 234996, "ratio": 0.02536001857032458, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "104.37 USD", "cny": 100535, "ratio": 0.01084941644524835, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "68.63 USD", "cny": 11745, "ratio": 0.001267482927830526, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.54 USD", "cny": 1342696, "ratio": 0.8223509618417483, "shares": 1941.0}, {"name": "SHY", "price": "82.66 USD", "cny": 290057, "ratio": 0.1776490381582517, "shares": 510.0}]}, {"date": "2026-03-21", "usd_cny": 6.9021, "hkd_cny": 0.8794, "total_risky": 8916669, "total_rf": 1637205, "total": 10553874, "stocks": [{"name": "腾讯控股", "price": "510.50 HKD", "cny": 4309764, "ratio": 0.483337892210645, "laotang": 0.5643, "shares": 9600.0}, {"name": "贵州茅台", "price": "1,445.00 CNY", "cny": 2456500, "ratio": 0.2754952550105875, "laotang": 0.2546, "shares": 1700.0}, {"name": "分众传媒", "price": "6.65 CNY", "cny": 1193675, "ratio": 0.1338700584265268, "laotang": 0.1283, "shares": 179500.0}, {"name": "古井贡B", "price": "72.70 HKD", "cny": 383594, "ratio": 0.04301987659292949, "laotang": 0.0527, "shares": 6000.0}, {"name": "盈富基金", "price": "25.56 HKD", "cny": 236013, "ratio": 0.02646874073715196, "laotang": null, "shares": 10500.0}, {"name": "CSI300 ETF", "price": "47.30 HKD", "cny": 232935, "ratio": 0.02612354456580142, "laotang": null, "shares": 5600.0}, {"name": "PDD", "price": "96.19 USD", "cny": 92948, "ratio": 0.01042407203856059, "laotang": null, "shares": 140.0}, {"name": "IBKR", "price": "65.47 USD", "cny": 11240, "ratio": 0.001260560417797274, "laotang": null, "shares": 24.8736}], "rf": [{"name": "SGOV", "price": "100.58 USD", "cny": 1347469, "ratio": 0.8230301031330836, "shares": 1941.0}, {"name": "SHY", "price": "82.31 USD", "cny": 289736, "ratio": 0.1769698968669165, "shares": 510.0}]}];
+const USD_JPY = 159.22;
+const _comma = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const fmt = n => '¥' + _comma(n);
+const pct = v => (v*100).toFixed(2)+'%';
+const shs = v => _comma(v);
+const COLS = ['#4a6fa5','#e07b39','#2a9d8f','#c0392b','#7b5ea7','#e9c46a','#59a14f','#e76f51'];
+// CNY → JPY（用各快照自身的 usd_cny + 生成时 USD/JPY）
+const toJPY  = (cny, usd_cny) => Math.round(cny * USD_JPY / usd_cny);
+const fmtJPY = n => '≈ ￥' + _comma(Math.round(n/10000)) + '万円';
+
+const L = DATA[DATA.length-1], P = DATA[DATA.length-2];
+document.getElementById('dateBadge').textContent = 'Snapshot · '+L.date;
+document.getElementById('kR').textContent  = fmt(L.total_risky);
+document.getElementById('kRp').textContent = '占总资产 '+pct(L.total_risky/L.total);
+document.getElementById('kF').textContent  = fmt(L.total_rf);
+document.getElementById('kFp').textContent = '占总资产 '+pct(L.total_rf/L.total);
+document.getElementById('kT').textContent  = fmt(L.total);
+document.getElementById('kRj').textContent = fmtJPY(toJPY(L.total_risky, L.usd_cny));
+document.getElementById('kFj').textContent = fmtJPY(toJPY(L.total_rf,    L.usd_cny));
+document.getElementById('kTj').textContent = fmtJPY(toJPY(L.total,       L.usd_cny));
+
+function setChg(elId, cur, prev) {
+  const d = cur - prev, el = document.getElementById(elId);
+  el.textContent = `较上期 ${d>=0?'+':''}${fmt(d)} (${d>=0?'+':''}${pct(d/prev)})`;
+  el.className = 'kpi-chg '+(d>=0?'up':'dn');  // 红涨绿跌（大陆习惯）
+}
+setChg('kRc', L.total_risky, P.total_risky);
+setChg('kFc', L.total_rf,    P.total_rf);
+setChg('kC',  L.total,       P.total);
+
+new Chart(document.getElementById('trendC').getContext('2d'),{
+  type:'line',
+  data:{
+    labels: DATA.map(s=>s.date.slice(5)),
+    datasets:[
+      {label:'总资产',   data:DATA.map(s=>s.total),       borderColor:'#4a6fa5',backgroundColor:'rgba(74,111,165,.09)',borderWidth:2.5,pointRadius:5,fill:true,tension:.3},
+      {label:'风险资产', data:DATA.map(s=>s.total_risky), borderColor:'#6a9fd8',backgroundColor:'transparent',borderWidth:1.8,borderDash:[5,4],pointRadius:3,tension:.3},
+      {label:'无风险',   data:DATA.map(s=>s.total_rf),    borderColor:'#2d6a2d',backgroundColor:'transparent',borderWidth:1.8,borderDash:[3,4],pointRadius:3,tension:.3}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{font:{family:"'Noto Sans JP'",size:11},boxWidth:13}},
+              tooltip:{callbacks:{label:c=>' '+c.dataset.label+': ¥'+Math.round(c.raw).toLocaleString()}}},
+    scales:{y:{ticks:{callback:v=>'¥'+(v/1e6).toFixed(1)+'M',font:{family:"'Noto Sans JP'",size:10}},grid:{color:'#e8eef6'}},
+             x:{ticks:{font:{family:"'Noto Sans JP'",size:10}}}}
+  }
+});
+
+new Chart(document.getElementById('pieC').getContext('2d'),{
+  type:'doughnut',
+  data:{labels:L.stocks.map(s=>s.name),datasets:[{data:L.stocks.map(s=>s.cny),backgroundColor:COLS,borderColor:'#fff',borderWidth:2,hoverOffset:5}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+              tooltip:{callbacks:{label:c=>' '+c.label+': ¥'+Math.round(c.raw).toLocaleString()+' ('+pct(c.raw/L.total_risky)+')'}}}
+  }
+});
+const legEl = document.getElementById('leg');
+L.stocks.forEach((s,i)=>{legEl.innerHTML+=`<div class="leg-i"><div class="dot" style="background:${COLS[i]}"></div><span>${s.name} ${pct(s.ratio)}</span></div>`});
+
+// ── 持仓明细：构建面板 + 导航 ────────────────────────────
+const pnlsEl = document.getElementById('panels');
+// 1. 构建所有面板
+DATA.forEach((snap, idx) => {
+  const chg2 = idx > 0 ? snap.total - DATA[idx-1].total : null;
+  const chgHtml = chg2 != null
+    ? `<span style="color:${chg2>=0?'#c0392b':'#2d9d2d'};font-weight:700">${chg2>=0?'▲':'▼'} ¥${Math.abs(chg2).toLocaleString()} (${Math.abs(chg2/DATA[idx-1].total*100).toFixed(2)}%)</span>`
+    : '<span style="color:#999">基准</span>';
+  const pnl = document.createElement('div');
+  pnl.className = 'panel'; pnl.id = 'p' + idx;
+  let h = `<div class="rate"><div>日期：<span>${snap.date}</span></div><div>USD/CNY：<span>${snap.usd_cny}</span></div><div>HKD/CNY：<span>${snap.hkd_cny}</span></div><div>较上期：${chgHtml}</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div><div class="sec">风险资产</div>
+  <table><thead><tr><th>企业</th><th class="r">持股数</th><th>股价</th><th class="r">人民币市值</th><th class="r">持仓比例</th><th class="r">老唐比例</th></tr></thead><tbody>`;
+  snap.stocks.forEach(s => {
+    const lt = s.laotang != null ? `<span class="lt">${pct(s.laotang)}</span>` : '—';
+    h += `<tr><td>${s.name}</td><td class="r">${shs(s.shares)}</td><td>${s.price}</td><td class="r">${fmt(s.cny)}</td><td class="r">${pct(s.ratio)}</td><td class="r">${lt}</td></tr>`;
+  });
+  h += `<tr class="tot"><td colspan="3"><b>合计</b></td><td class="r"><b>${fmt(snap.total_risky)}</b><div style="font-size:.72rem;color:#888;font-weight:400">${fmtJPY(toJPY(snap.total_risky,snap.usd_cny))}</div></td><td colspan="2"></td></tr>
+  </tbody></table></div>
+  <div><div class="sec">无风险资产</div>
+  <table><thead><tr><th>品种</th><th class="r">持股数</th><th>价格</th><th class="r">人民币市值</th><th class="r">占比</th></tr></thead><tbody>`;
+  snap.rf.forEach(s => { h += `<tr><td>${s.name}</td><td class="r">${shs(s.shares)}</td><td>${s.price}</td><td class="r">${fmt(s.cny)}</td><td class="r">${pct(s.ratio)}</td></tr>`; });
+  h += `<tr class="tot"><td colspan="3"><b>合计</b></td><td class="r"><b>${fmt(snap.total_rf)}</b><div style="font-size:.72rem;color:#888;font-weight:400">${fmtJPY(toJPY(snap.total_rf,snap.usd_cny))}</div></td><td></td></tr>
+  </tbody></table>
+  <div style="margin-top:14px;padding:11px 15px;background:var(--af-emphasis);border-radius:var(--af-radius);font-size:.85rem">
+    <b style="color:var(--af-primary)">总资产：${fmt(snap.total)}</b>
+    <span style="color:#888;font-size:.78rem;margin-left:6px">${fmtJPY(toJPY(snap.total,snap.usd_cny))}</span>
+    &nbsp; 风险 ${pct(snap.total_risky/snap.total)} &nbsp; 无风险 ${pct(snap.total_rf/snap.total)}
+  </div></div></div>`;
+  pnl.innerHTML = h; pnlsEl.appendChild(pnl);
+});
+
+// 2. 核心切换函数
+let curIdx = DATA.length - 1;
+function switchTo(idx) {
+  if (idx < 0 || idx >= DATA.length) return;
+  curIdx = idx;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.getElementById('p' + idx).classList.add('on');
+  document.getElementById('snapSel').value = idx;
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === DATA.length - 1);
+  document.getElementById('histCount').textContent = `第 ${idx+1} / ${DATA.length} 条`;
+  document.getElementById('latestBadge').classList.toggle('on', idx === DATA.length - 1);
+}
+
+// 3. 下拉选择器（全量，按月分组）
+const sel = document.getElementById('snapSel');
+let lastMonth = '';
+DATA.forEach((snap, idx) => {
+  const mo = snap.date.slice(0, 7);
+  if (mo !== lastMonth) {
+    const og = document.createElement('optgroup');
+    og.label = mo.replace('-', ' 年 ') + ' 月';
+    sel.appendChild(og); lastMonth = mo;
+  }
+  const opt = document.createElement('option');
+  opt.value = idx;
+  opt.textContent = snap.date;
+  sel.lastElementChild.appendChild(opt);
+});
+sel.addEventListener('change', e => switchTo(+e.target.value));
+
+// 4. 箭头按钮
+document.getElementById('prevBtn').onclick = () => switchTo(curIdx - 1);
+document.getElementById('nextBtn').onclick = () => switchTo(curIdx + 1);
+
+// 6. 初始显示最新
+switchTo(DATA.length - 1);
+</script>
+</body>
+</html>
